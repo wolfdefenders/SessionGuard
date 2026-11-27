@@ -1,180 +1,294 @@
-# SessionGuard v2.0 — Cookie & Session Security Analyzer (GUI Edition)
+# SessionGuard v2.0
 
-**Final project tool — Web Session Security track**
-Student: **Rayyan** · Instructor: **Abdul Mannan** · PNY Trainings, Cyber Security Department
+### Cookie & Web Session Security Analyzer
 
-SessionGuard is a cookie and session security analyzer. Give it the address of
-your **own lab web application** and it fetches responses, inspects every raw
-`Set-Cookie` header, checks the **Secure / HttpOnly / SameSite** flags, measures
-session-cookie **length and Shannon entropy**, checks whether the session ID
-**rotates on login**, **tests session fixation** with an attacker-supplied ID,
-re-tests the **pre-logout session ID after logout**, samples fresh IDs for
-**duplicates / collisions / shared prefixes**, and audits **cookie scope and
-`__Secure-` / `__Host-` prefix rules** — then prints and saves a severity-rated
-session security report.
+SessionGuard is a Windows-friendly security auditing tool designed to analyze cookie configurations and web session management in authorized test environments. It helps identify common weaknesses in session handling and generates a severity-rated security report.
 
+The application includes a graphical user interface (GUI), command-line support, an offline demo mode, and a deliberately vulnerable local lab server for practice.
+
+> **Use responsibly:** Only scan applications and systems that you own or have explicit permission to test.
 
 ---
 
-## 1. Quick start (pick one)
+## Features
 
-### Option A — run the ready-made Windows EXE
-Double-click **`SessionGuard.exe`** (Windows 8/10/11 x64, nothing to install).
-The GUI opens, the scan runs in a background thread, and the report is
-auto-saved to the `reports\` folder next to the EXE.
+- **Cookie Security Audit** — Checks `Secure`, `HttpOnly`, and `SameSite` attributes, including `SameSite=None` without `Secure`.
+- **Session ID Analysis** — Measures session identifier length and Shannon entropy, and looks for weak or predictable patterns.
+- **Session Rotation Testing** — Checks whether the session identifier changes after login.
+- **Session Fixation Testing** — Tests whether a supplied session ID is retained during authentication.
+- **Logout Invalidation Testing** — Checks whether a pre-logout session remains valid after logout.
+- **Session ID Sampling** — Samples multiple identifiers to look for duplicates, collisions, shared prefixes, and sequential patterns.
+- **Cookie Scope & Prefix Checks** — Reviews cookie Domain and Path scope and checks `__Host-` and `__Secure-` prefix requirements.
+- **Security Findings & Reports** — Displays findings with severity ratings, evidence, remediation guidance, and OWASP references.
+- **GUI and CLI** — Run scans through the desktop interface or command line.
+- **Offline Demo & Self-Test** — Explore sample results and run built-in offline checks.
+- **Included Practice Lab** — Use the bundled vulnerable lab application to learn how the checks work.
 
-### Option B — run from source
+## Screenshots
+
+The application screenshot is available in the package:
+
+![SessionGuard GUI](SessionGuard/screenshot.png)
+
+---
+
+## Download
+
+Download or clone this repository:
+
+```bash
+git clone https://github.com/wolfdefenders/SessionGuard.git
 ```
+
+Alternatively, download the repository as a ZIP file from GitHub and extract it.
+
+The Windows application files are located in the `SessionGuard/` directory.
+
+## Quick Start (Windows)
+
+1. Download and extract the repository ZIP.
+2. Open the extracted `SessionGuard` folder.
+3. Run **`INSTALL_SessionGuard.bat`** for the recommended setup, or double-click **`SessionGuard.exe`** to launch the application directly.
+4. Enter the URL of your authorized test application.
+5. Configure the optional login and session test settings.
+6. Start the scan and review the results.
+
+The bundled `SessionGuard.exe` is a standalone Windows application and does not require a separate Python installation.
+
+### Included Windows files
+
+| File | Description |
+|---|---|
+| `SessionGuard.exe` | Main standalone GUI application |
+| `LabServer.exe` | Standalone vulnerable practice server |
+| `INSTALL_SessionGuard.bat` | Installer and shortcut setup |
+| `Run_SessionGuard.bat` | Launch helper |
+| `Build_EXE.bat` | Rebuilds the executable from source |
+| `HOW_TO_USE.txt` | Quick-start guide in Roman Urdu and English |
+
+Keep the application files together when running the EXE. Reports are saved in a `reports/` folder alongside the application.
+
+---
+
+## Run from Source
+
+### Requirements
+
+- Windows, Linux, or macOS with Python 3.8+
+- Tkinter (usually included with standard Windows Python installations)
+- Python packages listed in `requirements.txt`
+
+### Installation
+
+Open a terminal in the `SessionGuard/` directory:
+
+```bash
 python -m pip install -r requirements.txt
+```
+
+### Launch the GUI
+
+```bash
 python SessionGuard_GUI.py
 ```
-(Python 3.8+ with Tkinter. The tool also works without `requests` — it falls
-back to a built-in stdlib HTTP client.)
 
-### Option C — build your own EXE in one click
-Double-click **`Build_EXE.bat`**. It installs `requests` + `PyInstaller` and
-produces a fresh `SessionGuard.exe` next to the script.
+### Load demo data
 
-### Instant demo (no lab needed)
-Menu **Help → Load Demo Data** (or `python SessionGuard_GUI.py --demo`): the
-tool runs a full offline scan against a fictional vulnerable shop so you can
-see every tab populated with High findings.
+```bash
+python SessionGuard_GUI.py --demo
+```
+
+You can also use the application's **Help → Load Demo Data** menu option.
+
+### Run self-tests
+
+```bash
+python SessionGuard_GUI.py --selftest
+```
 
 ---
 
-## 2. What it checks (all PDF must-haves + stretch goals)
+## Using the Application
 
-| # | Check | Type |
-|---|-------|------|
-| 1 | Fetches target and captures **raw Set-Cookie headers** per hop (before the cookie jar normalizes them) | Must-have |
-| 2 | Flags audit: **Secure, HttpOnly, SameSite** on every cookie, incl. **SameSite=None without Secure** | Must-have |
-| 3 | **Length + Shannon entropy** (bits/char and estimated total bits) of every session value; flags short, low-entropy and **predictable** values (sequential runs, timestamps, hex/base64-encoded text, UUIDv1, username-derived) | Must-have |
-| 4 | **Session rotation on login** — compares pre-login vs post-login session ID | Must-have |
-| 5 | **Session fixation** — plants an attacker-supplied SID before login and reports kept vs fresh | Must-have |
-| 6 | Severity-rated findings + full **report saved to a text file** (auto + Save As) | Must-have |
-| 7 | **Sampling** of N fresh session IDs → duplicates, collisions, shared prefixes, sequential counters | Stretch |
-| 8 | **Logout invalidation** — re-uses the pre-logout SID and reports whether the server still accepts it | Stretch |
-| 9 | **Scope & prefixes** — Domain too broad / public-suffix / cross-domain, Path advisory, `__Host-` and `__Secure-` prefix rule breaks, long-lived session cookies | Stretch |
+1. Enter your authorized lab application's URL in the **Target** field.
+2. Select the scan modules you want to run.
+3. If you want to test authenticated session behavior, configure:
+   - Login URL
+   - Test username and password
+   - Username and password POST field names
+   - Optional extra POST fields, such as a CSRF token
+4. Configure session cookie names and optional fixation, sampling, logout, and protected-page settings.
+5. Click **RUN FULL SCAN**. Use **STOP** to abort a scan.
+6. Review the dashboard, cookies, findings, entropy analysis, session tests, raw headers, and report tabs.
+7. Save or copy the generated report when needed.
 
-Severity model: **HIGH** = accepted fixation, no rotation, session valid after
-logout, missing HttpOnly on a session cookie, SameSite=None without Secure,
-duplicate/sequential/predictable IDs, plaintext HTTP on a public host.
-**MEDIUM** = missing Secure on a session cookie, missing SameSite, short or
-low-entropy IDs, prefix violations, shared prefixes. **LOW / INFO** = advisory
-scope findings, non-session cookie flag gaps, inconclusive tests.
-Risk score = `10×High + 5×Medium + 2×Low` (max 100).
+The application can save scan reports automatically in its `reports/` directory. The password is not saved in the application settings.
+
+## Security Checks
+
+| Check | What it examines |
+|---|---|
+| Cookie flags | `Secure`, `HttpOnly`, and `SameSite` attributes |
+| Cookie transmission | Raw `Set-Cookie` headers captured across response hops |
+| Session entropy | Length, Shannon entropy, and estimated total entropy |
+| Predictability | Patterns such as sequential values and other weak identifiers |
+| Session rotation | Whether the session ID changes after login |
+| Session fixation | Whether a planted session ID is accepted or replaced |
+| Logout invalidation | Whether the old session remains usable after logout |
+| ID sampling | Duplicate IDs, collisions, shared prefixes, and sequential patterns |
+| Cookie scope | Domain and Path configuration |
+| Cookie prefixes | `__Host-` and `__Secure-` prefix requirements |
+
+### Severity and Risk Score
+
+SessionGuard assigns severity levels to findings and calculates a risk score using the following weighting:
+
+```text
+Risk Score = (10 × High) + (5 × Medium) + (2 × Low)
+```
+
+The score is capped at 100. Informational findings provide additional context and do not contribute to this formula.
+
+A finding's severity depends on the evidence collected during the scan. Some tests require valid lab login details and suitable application endpoints; inconclusive tests should not be treated as confirmed vulnerabilities.
 
 ---
 
-## 3. Using the GUI
+## Practice with the Included Lab Server
 
-1. **TARGET** box — your lab URL (e.g. `http://192.168.56.10:5000/`).
-2. Left sidebar —
-   * **Scan modules**: tick which tests a full scan runs (flags and entropy are
-     always available; rotation / fixation / logout need the login block).
-   * **Lab login**: login URL, your own lab username/password, POST field
-     names (defaults `username` / `password`), extra POST fields
-     (one `name=value` per line — e.g. a CSRF token if your lab needs it).
-   * **Session test options**: session cookie names (blank = auto-detect),
-     attacker SID for fixation (blank = auto), sampling count, logout URL
-     (blank = `/logout`), protected URL (blank = the page login redirects to),
-     authenticated-page marker for a precise logout verdict.
-3. **RUN FULL SCAN** (or Ctrl+Enter). Use **STOP** to abort mid-scan.
-4. Tabs: **Dashboard** (risk gauge + counts) · **Cookies** (double-click a row
-   for the raw header and full entropy analysis) · **Findings** (evidence, fix,
-   OWASP reference for every finding) · **Entropy** · **Session Tests**
-   (rotation / fixation / logout / sampling values and verdicts) ·
-   **Raw Headers** (every captured Set-Cookie per hop) · **Report**
-   (Save As / Copy).
-5. The report is auto-saved to `reports\SessionGuard_Report_<host>_<time>.txt`.
+The repository includes a deliberately vulnerable local application for learning and testing.
 
-Settings persist in `sessionguard_settings.json` (the password is never saved).
+### Option 1: Use the standalone server
 
----
+1. Open the `SessionGuard/` directory.
+2. Double-click `LabServer.exe`.
+3. The local practice server should be available at:
 
-## 4. Command-line mode (the original spec)
-
-Passing a URL runs the same analyzer from the console:
-
-```
-python SessionGuard_GUI.py http://192.168.56.10:5000/ ^
-       --login-url /login --username testuser --password TestPass123 ^
-       --samples 10 --no-verify --out lab_report.txt
+```text
+http://127.0.0.1:5057/
 ```
 
-All options: `python SessionGuard_GUI.py --help`
-(`--login-url --username --password --user-field --pass-field
---extra-fields --cookie-names --attacker-sid --samples --timeout --no-verify
---logout-url --protected-url --auth-marker --modules --out`).
+4. Enter that address as the target in SessionGuard.
 
-Self-checks: `python SessionGuard_GUI.py --selftest` (19 offline checks).
+**Demo credentials:**
 
----
-
-## 5. Testing it on your own lab
-
-`lab_server.py` (included) is a deliberately vulnerable lab app you can run
-locally to see every finding fire:
-
-```
-python -m pip install flask
-python lab_server.py 5057          # login: testuser / TestPass123
+```text
+Username: testuser
+Password: TestPass123
 ```
 
-Vulnerability switches: `SG_BADFLAGS=1` (no cookie flags), `SG_WEAK=1`
-(sequential 6-digit IDs), `SG_STATIC=1` (same ID for everyone),
-`SG_NO_ROTATE=1`, `SG_FIXABLE=1` (accepts planted SIDs), `SG_NO_LOGOUT=1`.
-Example worst-case run:
+### Option 2: Run the lab from Python source
 
-```
-set SG_BADFLAGS=1 && set SG_STATIC=1 && set SG_NO_ROTATE=1 && set SG_FIXABLE=1 && set SG_NO_LOGOUT=1
+Install the dependencies, then run:
+
+```bash
 python lab_server.py 5057
-SessionGuard.exe  (target http://127.0.0.1:5057/  login testuser / TestPass123)
 ```
 
-See `sample_report.txt` — a real scan of exactly that configuration
-(100/100 HIGH RISK, 5 High findings).
+The lab server is intentionally vulnerable. It is provided for local educational use, not for production deployment or exposure to public networks.
 
 ---
 
-## 6. Files in this package
+## Command-Line Usage
 
-| File | Purpose |
-|------|---------|
-| `SessionGuard.exe` | Ready-to-run Windows GUI (x64) |
-| `SessionGuard_GUI.py` | Full source — GUI + CLI + demo + selftest |
-| `Build_EXE.bat` | One-click EXE builder for Windows |
-| `Run_SessionGuard.bat` | Run from source with dependency check |
-| `requirements.txt` | Python dependencies (`requests`) |
-| `icon.ico`, `version.txt` | EXE icon and version metadata |
-| `sample_report.txt` | Real lab scan report (all-high configuration) |
-| `lab_server.py` | Vulnerable test lab for your own machine |
-| `screenshot.png` | GUI screenshot |
+SessionGuard also supports command-line scans.
+
+Example:
+
+```bash
+python SessionGuard_GUI.py http://127.0.0.1:5057/ \
+  --login-url /login \
+  --username testuser \
+  --password TestPass123 \
+  --samples 10 \
+  --out lab_report.txt
+```
+
+To see all available options:
+
+```bash
+python SessionGuard_GUI.py --help
+```
+
+To run the built-in self-tests:
+
+```bash
+python SessionGuard_GUI.py --selftest
+```
+
+The standalone Windows executable can also be used for command-line scans. Refer to `HOW_TO_USE.txt` for Windows-specific examples.
 
 ---
 
-## 7. Lab rules — read before scanning
+## Project Structure
 
-Build and test SessionGuard **only on systems you own or have written
-permission to test, inside an isolated lab environment**. Never point it at a
-real website you do not own, and never test with anyone else's account or
-session. A session test is only a test when you have ownership or written
-permission — anything else is unauthorized access. Unauthorized access to
-computer systems is a criminal offence under the **Prevention of Electronic
-Crimes Act, 2016 (Pakistan)**.
+```text
+SessionGuard-main/
+├── LICENSE
+├── README.md
+└── SessionGuard/
+    ├── SessionGuard.exe
+    ├── LabServer.exe
+    ├── SessionGuard_GUI.py
+    ├── lab_server.py
+    ├── INSTALL_SessionGuard.bat
+    ├── Run_SessionGuard.bat
+    ├── Build_EXE.bat
+    ├── HOW_TO_USE.txt
+    ├── requirements.txt
+    ├── icon.ico
+    ├── icon.png
+    ├── screenshot.png
+    ├── sample_report.txt
+    └── version.txt
+```
 
 ---
 
-## 8. Troubleshooting
+## Troubleshooting
 
-* **Login tests say "Login could not be verified"** — check username/password,
-  field names (`username`/`password` are defaults; many apps use `email`),
-  and add CSRF/extra fields in the sidebar. SessionGuard reports INFO instead
-  of guessing.
-* **Self-signed lab certificate error** — untick **Verify TLS**.
-* **No cookies captured** — try the login page URL as target, or a page that
-  sets cookies; SPAs may need the API endpoint that returns Set-Cookie.
-* **Logout verdict is "undetermined"** — fill *Protected URL* and
-  *Authenticated-page marker* (a string that only appears when logged in).
-* **Windows SmartScreen warning** — expected for self-built executables;
-  click *More info → Run anyway*.
+**The GUI does not open**
+- Try launching `SessionGuard.exe` directly from the extracted `SessionGuard/` folder.
+- Keep the EXE and its accompanying package files together.
+- Check whether Windows Security or another antivirus has quarantined the executable.
+
+**Login tests are inconclusive**
+- Verify the test credentials and login URL.
+- Check the username and password field names.
+- Add any required CSRF token or other fields under extra POST fields.
+- Configure a protected URL and authenticated-page marker if needed for logout testing.
+
+**No cookies are detected**
+- Try a lab page or endpoint that actually sends `Set-Cookie` headers.
+- Check that the target URL is correct.
+
+**TLS certificate errors in a test lab**
+- For a self-signed certificate in your own lab, you can disable TLS verification in the application settings. Do not disable certificate verification when testing real production services.
+
+**Windows SmartScreen warning**
+- Windows may warn about an unsigned executable. Only run it if you trust the source and have verified the download.
+
+---
+
+## Responsible Use
+
+SessionGuard is intended for education, defensive security auditing, and authorized testing.
+
+- Scan only systems you own or have explicit permission to assess.
+- Use test accounts and test session data.
+- Prefer isolated local lab environments.
+- Do not attempt to access, reuse, or manipulate another person's session.
+- Do not expose the intentionally vulnerable lab server to the public internet.
+
+You are responsible for complying with applicable laws and obtaining authorization before testing any system.
+
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  <b>SessionGuard v2.0</b><br>
+  Cookie & Web Session Security Analyzer<br>
+  <a href="https://github.com/wolfdefenders/SessionGuard">GitHub Repository</a>
+</p>
