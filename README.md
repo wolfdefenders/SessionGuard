@@ -13,7 +13,6 @@ re-tests the **pre-logout session ID after logout**, samples fresh IDs for
 `__Secure-` / `__Host-` prefix rules** — then prints and saves a severity-rated
 session security report.
 
-![SessionGuard screenshot](screenshot.png)
 
 ---
 
