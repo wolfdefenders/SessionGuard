@@ -1,0 +1,225 @@
+====================================================================================================
+  SessionGuard v2.0.0 - Cookie & Session Security Analyzer
+  Built for Rayyan - Web Session Security - PNY Trainings
+  Instructor: Abdul Mannan, Cyber Security Department
+====================================================================================================
+
+Target             : http://127.0.0.1:5120/
+Scan started       : 2026-11-21 13:23:53
+Duration           : 0.5 s
+TLS verification   : Disabled (lab certificate)
+Authorization     : LAB-ONLY - valid only for systems you own or
+                     have written permission to test.
+
+SUMMARY
+----------------------------------------------------------------------------------------------------
+Risk score        : 100 / 100  (HIGH RISK)
+Findings          : 5 High, 7 Medium, 9 Low, 0 Passed, 2 Info
+Cookies observed  : 5 (session-like: 1)
+Final HTTP status : 200
+Modules run       : Target fetch & cookie capture, Cookie flag audit, Entropy & predictability analysis, Cookie scope & prefix rules, Session rotation test, Session fixation test, Logout invalidation test, Session ID sampling
+
+COOKIES OBSERVED
+----------------------------------------------------------------------------------------------------
+  #  Name                Len  Secure HttpOnly SameSite  Domain         Path     Session Verdict
+  1  sessionid            19  no     no       -         (host)         /        Yes     Weak entropy
+  2  prefs                10  Yes    Yes      -         (host)         /        no      Weak entropy
+  3  analytics             6  no     no       None      (host)         /        no      Weak entropy
+  4  __Host-cfg            3  no     no       -         127.0.0.1      /        no      Weak entropy
+  5  __Secure-uid          2  no     no       -         (host)         /        no      Weak entropy
+
+SESSION TESTS
+----------------------------------------------------------------------------------------------------
+
+  SESSION ID ROTATION ON LOGIN
+    Verdict : FAIL
+    Login URL                 : http://127.0.0.1:5120/login
+    Login response            : HTTP 200 (http://127.0.0.1:5120/profile)
+    Login verified            : yes
+    Cookie sessionid (pre-login): staticsessionid0001
+    Cookie sessionid (post-login): staticsessionid0001
+    Verdict                   : Server kept the same session ID value after login - NO rotation.
+    Summary : Server kept the same session ID value after login - NO rotation.
+
+  SESSION FIXATION (attacker-supplied ID)
+    Verdict : FAIL
+    Cookie name               : sessionid
+    Attacker-supplied SID     : SGFIX5E78369E
+    SID after pre-login fetch : SGFIX5E78369E
+    SID after login           : SGFIX5E78369E
+    Login response            : HTTP 200 (http://127.0.0.1:5120/profile)
+    Login verified            : yes
+    Verdict                   : Server ACCEPTED the attacker-supplied session ID "SGFIX5E78369E" through a successful login.
+    Summary : Server ACCEPTED the attacker-supplied session ID "SGFIX5E78369E" through a successful login.
+
+  LOGOUT INVALIDATION (pre-logout ID re-use)
+    Verdict : FAIL
+    Logout URL                : http://127.0.0.1:5120/logout
+    Pre-logout SID            : staticsessionid0001
+    Server cleared the cookie?: no
+    Re-used SID               : staticsessionid0001
+    Protected URL             : http://127.0.0.1:5120/profile
+    Re-use response           : HTTP 200 (http://127.0.0.1:5120/profile)
+    Still authenticated?      : YES
+    Verdict                   : The pre-logout session ID is STILL ACCEPTED after logout - the server did not invalidate it.
+    Summary : The pre-logout session ID is STILL ACCEPTED after logout - the server did not invalidate it.
+
+  SESSION ID SAMPLING (duplicates / collisions)
+    Verdict : HIGH
+    Samples requested         : 8
+    Values received           : 8
+    Unique values             : 1
+    Duplicates                : "staticsessionid0001" x8
+    Shared prefixes           : none
+    Sequential (counter-like) : no
+    Min / avg entropy         : ~61 / ~61 bits
+    Sampled values        :
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+        staticsessionid0001
+    Summary : DUPLICATE session IDs: 8 of 8 requests returned a previously issued value.
+
+ENTROPY ANALYSIS (session-like cookies)
+----------------------------------------------------------------------------------------------------
+  Name                Len   Uniq  Bits/ch     Total  Alphabet       Verdict
+  sessionid            19     11     3.22        61  base36         Weak entropy
+
+FINDINGS - HIGH (5)
+----------------------------------------------------------------------------------------------------
+[H1] Session cookie missing HttpOnly flag - "sessionid"
+     Cookie    : sessionid
+     Evidence  : Cookie "sessionid" is set without HttpOnly, so any XSS flaw on this origin can read it via document.cookie and steal the value.
+     Fix       : Add the HttpOnly attribute to session cookies so JavaScript cannot read them.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[H2] Session ID not rotated after login
+     Cookie    : sessionid
+     Evidence  : Pre-login and post-login session identifiers are identical (sessionid=staticsessionid0001). An attacker who learns the pre-login value owns the authenticated session.
+     Fix       : Regenerate the session identifier on every privilege change (especially login): invalidate the old ID server-side and issue a fresh one.
+     Reference : OWASP Session Management Cheat Sheet
+[H3] Session fixation - server accepted the attacker-supplied session ID
+     Cookie    : sessionid
+     Evidence  : Attacker-supplied value "SGFIX5E78369E" for cookie "sessionid" was still in use after a successful login, so anyone who plants that value in a victim's browser inherits the authenticated session.
+     Fix       : Regenerate the session identifier on login (and on any privilege change) and invalidate the attacker-supplied ID server-side.
+     Reference : OWASP Session Management Cheat Sheet
+[H4] Session ID still accepted after logout
+     Cookie    : sessionid
+     Evidence  : After logging out, re-using SID "staticsessionid0001" on http://127.0.0.1:5120/profile returned an authenticated response. A stolen or leaked session ID remains usable even after the user logs out.
+     Fix       : Delete the server-side session record on logout, invalidate the cookie, and reject unknown/expired IDs on every request.
+     Reference : OWASP Session Management Cheat Sheet
+[H5] Duplicate session IDs observed (collision)
+     Cookie    : sessionid
+     Evidence  : Across 8 fresh requests, 1 value(s) repeated, e.g. "staticsessionid0001" issued 8 times. Repeated IDs point to a broken or static generator.
+     Fix       : Generate every session ID from a CSPRNG; never reuse values across sessions.
+     Reference : OWASP Session Management Cheat Sheet
+
+FINDINGS - MEDIUM (7)
+----------------------------------------------------------------------------------------------------
+[M6] Session cookie missing Secure flag - "sessionid"
+     Cookie    : sessionid
+     Evidence  : Cookie "sessionid" is set without the Secure flag, so it can also travel over plain HTTP. The target itself is served over http:// (private/lab host)
+     Fix       : Add the Secure attribute so the cookie is only sent over HTTPS.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[M7] Session cookie has no SameSite attribute - "sessionid"
+     Cookie    : sessionid
+     Evidence  : Cookie "sessionid" declares no SameSite attribute. Modern browsers default to Lax, but older or embedded browsers may not, leaving the cookie exposed to cross-site requests (CSRF).
+     Fix       : Set SameSite=Lax or SameSite=Strict explicitly.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[M8] SameSite=None without Secure on cookie "analytics"
+     Cookie    : analytics
+     Evidence  : Cookie "analytics" declares SameSite=None but not Secure. This combination is invalid per RFC6265bis: modern browsers reject the cookie, and if it were accepted it would be sent on every cross-site request.
+     Fix       : Use SameSite=Lax (or Strict), or add the Secure flag when SameSite=None is really required.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[M9] Weak session ID entropy - "sessionid"
+     Cookie    : sessionid
+     Evidence  : Value "staticsessionid0001" (length 19, alphabet base36): Shannon entropy 3.22 bits/char, ~61 bits total. estimated entropy is ~61 bits - below the 64-bit recommendation.
+     Fix       : Generate session IDs from a CSPRNG with at least 128 bits of entropy (e.g. secrets.token_bytes(16)).
+     Reference : OWASP Session Management Cheat Sheet (>= 64 bits of entropy)
+[M10] Cookie prefix rule violation - "__Host-cfg"
+     Cookie    : __Host-cfg
+     Evidence  : Cookie "__Host-cfg" breaks its prefix contract: m; i; s; s; i; n; g;  ; S; e; c; u; r; e;  ; (; r; e; q; u; i; r; e; d;  ; b; y;  ; _; _; H; o; s; t; -; ). Browsers will refuse this cookie, and the prefix promise to users is broken.
+     Fix       : __Host- cookies need Secure, Path=/ and no Domain attribute; __Secure- cookies need Secure.
+     Reference : MDN - Set-Cookie / __Host- and __Secure- prefixes
+[M11] Cookie prefix rule violation - "__Host-cfg"
+     Cookie    : __Host-cfg
+     Evidence  : Cookie "__Host-cfg" breaks its prefix contract: h; a; s;  ; a;  ; D; o; m; a; i; n;  ; a; t; t; r; i; b; u; t; e;  ; (; f; o; r; b; i; d; d; e; n;  ; f; o; r;  ; _; _; H; o; s; t; -; ). Browsers will refuse this cookie, and the prefix promise to users is broken.
+     Fix       : __Host- cookies need Secure, Path=/ and no Domain attribute; __Secure- cookies need Secure.
+     Reference : MDN - Set-Cookie / __Host- and __Secure- prefixes
+[M12] Cookie prefix rule violation - "__Secure-uid"
+     Cookie    : __Secure-uid
+     Evidence  : Cookie "__Secure-uid" breaks its prefix contract: m; i; s; s; i; n; g;  ; S; e; c; u; r; e;  ; (; r; e; q; u; i; r; e; d;  ; b; y;  ; _; _; S; e; c; u; r; e; -; ). Browsers will refuse this cookie, and the prefix promise to users is broken.
+     Fix       : __Host- cookies need Secure, Path=/ and no Domain attribute; __Secure- cookies need Secure.
+     Reference : MDN - Set-Cookie / __Host- and __Secure- prefixes
+
+FINDINGS - LOW (9)
+----------------------------------------------------------------------------------------------------
+[L13] Cookie has no SameSite attribute - "prefs"
+     Cookie    : prefs
+     Evidence  : Cookie "prefs" declares no SameSite attribute. Modern browsers default to Lax, but older or embedded browsers may not, leaving the cookie exposed to cross-site requests (CSRF).
+     Fix       : Set SameSite=Lax or SameSite=Strict explicitly.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L14] Cookie missing Secure flag - "analytics"
+     Cookie    : analytics
+     Evidence  : Cookie "analytics" is set without the Secure flag, so it can also travel over plain HTTP. The target itself is served over http:// (private/lab host)
+     Fix       : Add the Secure attribute so the cookie is only sent over HTTPS.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L15] Cookie missing HttpOnly flag - "analytics"
+     Cookie    : analytics
+     Evidence  : Cookie "analytics" is set without HttpOnly, so any XSS flaw on this origin can read it via document.cookie and steal the value.
+     Fix       : Add the HttpOnly attribute to session cookies so JavaScript cannot read them.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L16] Cookie missing Secure flag - "__Host-cfg"
+     Cookie    : __Host-cfg
+     Evidence  : Cookie "__Host-cfg" is set without the Secure flag, so it can also travel over plain HTTP. The target itself is served over http:// (private/lab host)
+     Fix       : Add the Secure attribute so the cookie is only sent over HTTPS.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L17] Cookie missing HttpOnly flag - "__Host-cfg"
+     Cookie    : __Host-cfg
+     Evidence  : Cookie "__Host-cfg" is set without HttpOnly, so any XSS flaw on this origin can read it via document.cookie and steal the value.
+     Fix       : Add the HttpOnly attribute to session cookies so JavaScript cannot read them.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L18] Cookie has no SameSite attribute - "__Host-cfg"
+     Cookie    : __Host-cfg
+     Evidence  : Cookie "__Host-cfg" declares no SameSite attribute. Modern browsers default to Lax, but older or embedded browsers may not, leaving the cookie exposed to cross-site requests (CSRF).
+     Fix       : Set SameSite=Lax or SameSite=Strict explicitly.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L19] Cookie missing Secure flag - "__Secure-uid"
+     Cookie    : __Secure-uid
+     Evidence  : Cookie "__Secure-uid" is set without the Secure flag, so it can also travel over plain HTTP. The target itself is served over http:// (private/lab host)
+     Fix       : Add the Secure attribute so the cookie is only sent over HTTPS.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L20] Cookie missing HttpOnly flag - "__Secure-uid"
+     Cookie    : __Secure-uid
+     Evidence  : Cookie "__Secure-uid" is set without HttpOnly, so any XSS flaw on this origin can read it via document.cookie and steal the value.
+     Fix       : Add the HttpOnly attribute to session cookies so JavaScript cannot read them.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+[L21] Cookie has no SameSite attribute - "__Secure-uid"
+     Cookie    : __Secure-uid
+     Evidence  : Cookie "__Secure-uid" declares no SameSite attribute. Modern browsers default to Lax, but older or embedded browsers may not, leaving the cookie exposed to cross-site requests (CSRF).
+     Fix       : Set SameSite=Lax or SameSite=Strict explicitly.
+     Reference : OWASP WSTG v4.2 - Session Management Testing
+
+NOTES & INFO (2)
+----------------------------------------------------------------------------------------------------
+[INFO] Flag audit summary: 0 of 5 observed cookies are fully flagged (Secure + HttpOnly + SameSite)
+[INFO] Session cookie "sessionid" uses Path=/ (widest scope)
+        Cookie "sessionid" is sent to every path of the site. If the application only needs it under a sub-folder, narrow the Path attribute to reduce exposure.
+
+METHODOLOGY & SEVERITY MODEL
+----------------------------------------------------------------------------------------------------
+- Entropy is measured as Shannon entropy of the character distribution (bits/char)
+  multiplied by length for estimated total bits; OWASP recommends >= 64 bits.
+- HIGH: accepted fixation, no rotation, session still valid after logout, missing HttpOnly on a
+  session cookie, SameSite=None without Secure, duplicate / sequential session IDs, predictable
+  values, plaintext HTTP on a public host.
+- MEDIUM: missing Secure on a session cookie, missing SameSite, short or low-entropy IDs, prefix
+  rule violations, shared ID prefixes.
+- LOW / INFO: advisory scope findings, non-session cookie flag gaps, inconclusive tests.
+- Rotation / fixation / logout tests need lab credentials in Settings; without them they are
+  reported as INFO (not tested).
+- LAB-ONLY: test only systems you own or have written permission to test. Unauthorized access
+  is a criminal offence under the Prevention of Electronic Crimes Act, 2016 (Pakistan).

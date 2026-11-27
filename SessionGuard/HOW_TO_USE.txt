@@ -1,0 +1,184 @@
+====================================================================
+  SessionGuard v2.0.0 - START FROM HERE (2-minute guide)
+  (Roman Urdu + English)
+====================================================================
+
+!! SAB SE PEHLE - GHOR SE PARHO !!
+
+    INSTALL_SessionGuard.bat <-- ONE-CLICK INSTALLER (RECOMMENDED).
+        Ye ek hi click mein sab kuch kar deta hai:
+          1. Tool verify karta hai (self-test)
+          2. Desktop + Start Menu shortcuts banata hai
+          3. Agar PC par Python hai to requirements (requests +
+             flask) AUTOMATIC install kar deta hai - aapko kuch
+             nahi karna. Agar Python nahi hai to ye step silently
+             skip hota hai (koi error nahi) kyunke SessionGuard.exe
+             standalone hai - sab kuch EXE ke andar bundled hai.
+          4. Aakhri mein poochta hai: "Abhi SessionGuard kholna hai?"
+
+    SessionGuard.exe     <-- YE ASLI TOOL HAI. READY TO RUN.
+                             SIRF DOUBLE-CLICK KAREIN.
+                             (Kisi Python ya requirement ki zaroorat
+                              NAHI - sab kuch EXE ke andar hai.)
+
+    LabServer.exe        <-- Practice demo site (standalone EXE).
+                             Double-click karein, phir browser mein:
+                             http://127.0.0.1:5057/
+
+    Build_EXE.bat        <-- YE MAT CHALAO! Ye sirf developers ke
+                             liye hai (tool ko dobara banane ke liye).
+                             Isko chalane ke liye PC par Python install
+                             hona chahiye. Aapke PC par Python nahi tha
+                             isi liye error aaya tha. EXE pehle se bani
+                             hui hai - dobara banane ki zaroorat NAHI.
+
+    Run_SessionGuard.bat <-- Ye bhi tool khol deta hai.
+
+
+====================================================================
+  1. TOOL KO START KARNA (GUI - sab se aasan tareeqa)
+====================================================================
+
+    Sirf DOUBLE-CLICK karein:
+
+        SessionGuard.exe
+
+    ...ya phir:
+
+        Run_SessionGuard.bat
+
+    Ya pehle INSTALL_SessionGuard.bat chalayen - wo shortcuts bana
+    degi aur Start Menu mein "SessionGuard" add kar degi.
+
+    GUI khul jayega. Ismein:
+      - Target URL likhein aur "Start Scan" dabaien
+      - Menu: Help > Load Demo Data  (offline demo dekhne ke liye)
+      - Menu: Help > Run Self-test   (19 offline checks)
+
+    GUI ke 7 tabs: Dashboard, Findings, Cookies, Session Tests,
+    Entropy, Report, Settings/About.
+
+    Report save karne ke liye: File > Save Report As...
+
+    Scan results ka auto-save folder (EXE ke baghair wajah):
+        reports\SessionGuard_Report_<target>_<time>.txt
+
+
+====================================================================
+  2. CMD / COMMAND PROMPT SE USE KARNA (commands)
+====================================================================
+
+    Windows Start menu > "cmd" kholen, phir apne folder mein jayen:
+
+        cd C:\Users\%USERNAME%\Downloads\SessionGuard
+        (apna asli path likhein jahan aapne ZIP extract ki hai)
+
+    a) GUI kholna (koi scan nahi):
+        SessionGuard.exe
+
+    b) GUI + pehle se loaded demo data:
+        SessionGuard.exe --demo
+
+    c) Command-line scan (bundled lab server example):
+        SessionGuard.exe http://127.0.0.1:5057/ --login-url /login
+            --username testuser --password TestPass123
+
+    d) Apni kisi LOCAL test site ka scan (sirf apne lab sites par):
+        SessionGuard.exe http://localhost:8080/ --cookie-names sessionid
+
+    e) Offline self-test:
+        SessionGuard.exe --selftest
+
+    NOTE (important): SessionGuard.exe ek "windowed" build hai, is
+    liye cmd window mein scan ka text nahi chapega. Scan chupke se
+    chalta hai; mukammal hone par ek POPUP aata hai jo report ka
+    path batata hai, aur report file mein sab kuch hota hai:
+
+        reports\SessionGuard_Report_....txt
+
+
+====================================================================
+  3. PACKAGE KE FILES (is ZIP mein kya kya hai)
+====================================================================
+
+    INSTALL_SessionGuard.bat = ek click mein setup + shortcuts +
+                               requirements auto-install (agar
+                               Python hai) ya graceful skip
+    SessionGuard.exe         = asli tool (standalone)
+    LabServer.exe            = practice demo site (standalone)
+    HOW_TO_USE.txt           = ye guide
+    README.md                = technical documentation (English)
+
+====================================================================
+  3a. TOOL KYA CHECK KARTA HAI (modules)
+====================================================================
+
+    1. Target fetch & cookie capture   (login + cookie pakarna)
+    2. Cookie flag audit               (Secure / HttpOnly / SameSite)
+    3. Entropy & predictability        (Shannon entropy - kamzor
+                                        predictable session IDs)
+    4. Cookie scope & prefix rules     (__Host- / __Secure- /
+                                        Domain/Path scope)
+    5. Session rotation test           (login ke baad naya SID?)
+    6. Session fixation test           (attacker SID reject hota hai?)
+    7. Logout invalidation test        (purana SID logout ke baad
+                                        dead hai ya zinda?)
+    8. Session ID sampling             (kai SID le kar pattern nikalna)
+
+    Output: Risk score 0-100 (letter grade), severity findings
+    (Critical/High/Medium/Low), text report.
+
+
+====================================================================
+  4. OPTIONAL - PRACTICE DEMO SITE CHALANA (LabServer.exe)
+====================================================================
+
+    ZIP ke sath ek ready-made demo lab site bhi aati hai jo
+    STANDALONE EXE hai - iske liye bhi Python ki zaroorat NAHI:
+
+        LabServer.exe  <-- double-click karein
+
+    Ek black window khulegi jismein likha ayega:
+        Running on http://127.0.0.1:5057/
+
+    Phir SessionGuard mein target likhein:
+        http://127.0.0.1:5057/
+
+    Practice ke liye login credentials (lab ke andar hi likhe hue):
+        Username : testuser
+        Password : TestPass123
+
+    Ye demo site jaan-boojh kar kuch kamzor cookies banati hai
+    (bina Secure/HttpOnly wali, weak entropy, __Host- prefix
+    violation) taake SessionGuard ke findings ki practice ho sake.
+
+    (Developers ke liye: wahi site source se chalani ho to
+     Python + flask ke sath:  python lab_server.py 5057)
+
+
+====================================================================
+  5. ZAROORI WARNING (legal)
+====================================================================
+
+    YE TOOL SIRF LAB / EDUCATIONAL USE KE LIYE HAI.
+
+    Sirf apni khud ki websites, local lab systems, ya jin systems
+    ke liye aapke paas WRITTEN PERMISSION hai, un par scan karein.
+    Doosron ke systems par bina ijazat scan karna qanooni jurm hai.
+
+
+====================================================================
+  6. AGAR EXE NA KHULE (antivirus / SmartScreen)
+====================================================================
+
+    - SmartScreen warning aaye to: "More info" > "Run anyway".
+    - Kuch antivirus PyInstaller EXE ko false-positive samajhte
+      hain: apne AV mein is folder ko exclusions mein add karein.
+    - EXE ko apne folder se bahar na khayen (reports\ folder wahi
+      banaya jata hai jahan EXE hai).
+
+
+====================================================================
+  Made for Rayyan - Web Session Security - PNY Trainings
+  Instructor: Abdul Mannan, Cyber Security Department
+====================================================================
